@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Notebook — Offline-First AI Learning Planner</title>
+  <meta name="description" content="Offline-first AI-assisted learning planner with 2026 cognitive clarity, in-browser Pyodide WebAssembly execution, Bento dashboard, and multi-device sync.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Sticky Navigation (Frosted Glass & Floating Controls) -->
+    <header class="navbar">
+      <div class="nav-inner">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <!-- Brand Logo & Title (Clickable, returns to Dashboard) -->
+          <div class="brand-group" id="brandHomeBtn" role="button" tabindex="0" title="Go to Dashboard" style="cursor: pointer;">
+            <div class="brand-icon" aria-hidden="true">SN</div>
+            <div>
+              <span class="brand-title">Smart Notebook</span>
+              <span class="brand-subtitle">2026 Edition</span>
+            </div>
+          </div>
+
+          <!-- Back to Home Button (Visible when navigated to non-dashboard pages) -->
+          <button type="button" class="btn-back-to-home" id="btnBackToHome" aria-label="Back to Dashboard" title="Return to Dashboard" style="display: none;">
+            <span class="material-symbols-rounded">arrow_back</span>
+            <span>Back to Home</span>
+          </button>
+        </div>
+
+        <div class="nav-right-group" style="display: flex; align-items: center; gap: 10px;">
+          <!-- Settings Menu (Includes Plan Setup, Multi-Device Sync, Auth Config & Data Management) -->
+          <div class="settings-menu-wrapper" id="settingsMenuWrapper" style="position: relative;">
+            <button type="button" class="nav-settings-btn" id="btnOpenSettings" aria-expanded="false" aria-haspopup="true" title="Settings & Setup" aria-label="Open Settings">
+              <span class="material-symbols-rounded">settings</span>
+              <span class="settings-btn-label">Settings</span>
+              <span class="material-symbols-rounded settings-chevron" style="font-size: 16px; margin-left: -2px;">expand_more</span>
+            </button>
+
+            <div class="settings-dropdown-menu" id="settingsDropdownMenu" style="display: none;">
+              <div class="settings-dropdown-header">
+                <span class="settings-dropdown-caption">Settings & Tools</span>
+              </div>
+
+              <!-- Plan Setup in Settings -->
+              <button type="button" class="dropdown-item" id="btnSettingsPlanSetup">
+                <span class="material-symbols-rounded" style="color: var(--accent);">tune</span>
+                <div class="dropdown-item-text">
+                  <span class="dropdown-item-title">Plan Setup</span>
+                  <span class="dropdown-item-sub">AI curriculum generator & prompt builder</span>
+                </div>
+              </button>
+
+              <!-- Multi-Device Sync in Settings -->
+              <button type="button" class="dropdown-item" id="btnSettingsDeviceSync">
+                <span class="material-symbols-rounded" style="color: #059669;">devices</span>
+                <div class="dropdown-item-text">
+                  <span class="dropdown-item-title">Multi-Device Sync</span>
+                  <span class="dropdown-item-sub">Connect phone, tablet & local Wi-Fi</span>
+                </div>
+              </button>
+
+              <!-- Google Auth Config in Settings -->
+              <button type="button" class="dropdown-item" id="btnSettingsGoogleConfig">
+                <span class="material-symbols-rounded" style="color: #d97706;">key</span>
+                <div class="dropdown-item-text">
+                  <span class="dropdown-item-title">Google Auth Config</span>
+                  <span class="dropdown-item-sub">Client ID & cloud credentials</span>
+                </div>
+              </button>
+
+              <div class="dropdown-divider"></div>
+
+              <!-- Data Management in Settings -->
+              <button type="button" class="dropdown-item" id="btnSettingsExportJson">
+                <span class="material-symbols-rounded">download</span>
+                <div class="dropdown-item-text">
+                  <span class="dropdown-item-title">Export Backup (JSON)</span>
+                </div>
+              </button>
+
+              <button type="button" class="dropdown-item" id="btnSettingsResetAll" style="color: var(--danger);">
+                <span class="material-symbols-rounded">delete_forever</span>
+                <div class="dropdown-item-text">
+                  <span class="dropdown-item-title" style="color: var(--danger);">Reset Database</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sign In Button (When logged out / quick access) -->
+          <button type="button" class="btn btn-secondary btn-sm" id="btnOpenAuthModal" style="padding: 6px 14px; gap: 7px;">
+            <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+            <span id="navAuthBtnText">Sign In</span>
+          </button>
+
+          <!-- User Menu (Google Auth / Profile / Logout Menu) -->
+          <div class="user-menu-wrapper" id="userMenuGroup" style="display: none; position: relative;">
+            <button type="button" class="user-profile-pill" id="btnUserMenu" aria-expanded="false" aria-haspopup="true">
+              <img id="userNavAvatar" class="user-avatar-sm" src="" alt="User" style="display: none; width: 22px; height: 22px; border-radius: 50%; object-fit: cover;" />
+              <span class="user-avatar-fallback" id="userNavFallback">U</span>
+              <span id="userNavName">Learner</span>
+              <span class="material-symbols-rounded" style="font-size: 16px;">expand_more</span>
+            </button>
+
+            <div class="user-dropdown-menu" id="userDropdownMenu" style="display: none;">
+              <div class="user-dropdown-header">
+                <div id="userDropdownName" style="font-weight: 700;">Learner</div>
+                <div id="userDropdownEmail" style="font-size: 11.5px; color: var(--text-tertiary);">user@example.com</div>
+              </div>
+
+              <!-- Profile moved to Google Auth / User menu -->
+              <button type="button" class="dropdown-item" id="btnUserDropdownProfile">
+                <span class="material-symbols-rounded" style="color: var(--accent);">person</span>
+                <div class="dropdown-item-text">
+                  <span class="dropdown-item-title">Profile</span>
+                  <span class="dropdown-item-sub">Daily streaks, consistency & stats</span>
+                </div>
+              </button>
+
+              <div class="dropdown-divider"></div>
+
+              <button type="button" class="dropdown-item" id="btnUserDropdownSignIn" style="display: none;">
+                <span class="material-symbols-rounded" style="color: var(--accent);">login</span>
+                <div class="dropdown-item-text">
+                  <span class="dropdown-item-title">Sign in with Google</span>
+                </div>
+              </button>
+
+              <button type="button" class="dropdown-item" id="btnSwitchAccount">
+                <span class="material-symbols-rounded">switch_account</span>
+                <span>Switch User</span>
+              </button>
+
+              <button type="button" class="dropdown-item" id="btnOpenGoogleSettings">
+                <span class="material-symbols-rounded">settings</span>
+                <span>Google Auth Config</span>
+              </button>
+
+              <button type="button" class="dropdown-item" id="btnSignOut" style="color: var(--danger);">
+                <span class="material-symbols-rounded">logout</span>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- ================= PAGE 1: CONFIGURATION (ONBOARDING) ================= -->
+      <section id="viewConfig" class="view-section active">
+        <div class="config-layout">
+          <button type="button" class="page-top-back-btn" data-action="go-home" aria-label="Return to Dashboard">
+            <span class="material-symbols-rounded">arrow_back</span>
+            <span>Back to Dashboard</span>
+          </button>
+          <header class="page-header">
+            <h1 class="page-title">Create Your Learning Roadmap</h1>
+            <p class="page-description">
+              Define your objective, duration, and target language. Generate a strictly formatted prompt to send to ChatGPT, Claude, or Gemini, then paste the AI's JSON response below.
+            </p>
+          </header>
+
+          <div class="card">
+            <form id="planConfigForm" class="config-form">
+              <div class="form-group">
+                <label for="inputGoal" class="form-label">
+                  <span>Learning Goal</span>
+                  <span class="form-hint">e.g. Master Python Foundations</span>
+                </label>
+                <input
+                  type="text"
+                  id="inputGoal"
+                  class="form-input"
+                  placeholder="e.g. Master Python Foundations"
+                  value="Master Python 3 Core & Data Structures"
+                  required
+                >
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="inputDuration" class="form-label">Duration (Days)</label>
+                  <input
+                    type="number"
+                    id="inputDuration"
+                    class="form-input"
+                    min="1"
+                    max="90"
+                    value="7"
+                    required
+                  >
+                </div>
+
+                <div class="form-group">
+                  <label for="inputLanguage" class="form-label">Primary Code Language</label>
+                  <select id="inputLanguage" class="form-select">
+                    <option value="python" selected>Python (Pyodide in-browser)</option>
+                    <option value="javascript">JavaScript (Web Worker sandbox)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style="display: flex; gap: 12px; align-items: center; margin-top: 6px; flex-wrap: wrap;">
+                <button type="submit" id="btnGeneratePrompt" class="btn btn-primary" style="flex: 1;">
+                  <span class="material-symbols-rounded">auto_awesome</span>
+                  <span>Generate AI Prompt</span>
+                </button>
+                <button type="button" id="btnQuickSample" class="btn btn-secondary" title="Populate with ready 7-day curriculum">
+                  ✨ Instant Sample Plan
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Prompt Output Section (Revealed after generation) -->
+          <div id="promptOutputSection" class="card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h2 style="font-size: 16px; font-weight: 700; letter-spacing: -0.02em;">Step 1: Copy Prompt for External AI</h2>
+              <span style="font-size: 12px; color: var(--text-tertiary); font-weight: 500;">Strict JSON array schema</span>
+            </div>
+
+            <div class="prompt-box">
+              <pre class="prompt-text" id="promptTextDisplay"></pre>
+              <div class="prompt-actions">
+                <span style="font-size: 12px; color: var(--text-secondary);">Send prompt to ChatGPT, Claude, or Gemini</span>
+                <button type="button" id="btnCopyPrompt" class="btn btn-secondary btn-sm">
+                  <span class="material-symbols-rounded">content_copy</span>
+                  <span>Copy Prompt</span>
+                </button>
+              </div>
+            </div>
+
+            <div style="margin-top: 28px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label for="aiJsonResponse" class="form-label" style="margin-bottom: 0;">
+                  Step 2: Paste AI JSON Response
+                </label>
+                <span class="form-hint">Markdown (```json) auto-stripped via RegEx</span>
+              </div>
+              <textarea
+                id="aiJsonResponse"
+                class="form-textarea"
+                placeholder='Paste AI response here... e.g. [{"day": 1, "title": "...", "description": "..."}]'
+              ></textarea>
+
+              <div id="schemaErrorAlert" class="alert alert-danger" style="display: none;" role="alert">
+                <span class="material-symbols-rounded">error</span>
+                <div id="schemaErrorText"></div>
+              </div>
+
+              <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 12px;">
+                <button type="button" id="btnValidateAndSave" class="btn btn-primary">
+                  <span class="material-symbols-rounded">rocket_launch</span>
+                  <span>Validate & Launch Roadmap</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PAGE 2: DASHBOARD & SLIDER WITH CALENDAR ================= -->
+      <section id="viewDashboard" class="view-section">
+        <!-- Sleek Frosted Quick Metrics Bar -->
+        <div class="dash-quick-metrics-bar">
+          <div class="metric-pill">
+            <span class="material-symbols-rounded">verified</span>
+            <span>Consistency:</span>
+            <strong id="widgetConsistencyText">100%</strong>
+            <span class="metric-pill-sub" id="widgetConsistencyLabel">Pristine Habit 🌟</span>
+            <!-- Hidden legacy SVG circle to keep references safe -->
+            <svg style="display: none;" viewBox="0 0 80 80">
+              <circle id="widgetConsistencyCircle" cx="40" cy="40" r="32" />
+            </svg>
+          </div>
+
+          <div class="metric-pill">
+            <span class="material-symbols-rounded">task_alt</span>
+            <span>Completed:</span>
+            <strong id="widgetCompletedDays">0</strong>
+            <span style="color: var(--text-tertiary);" id="widgetTotalDays">/ 0</span>
+            <span class="metric-pill-sub" id="widgetCompletedSubtext">0% completed</span>
+            <div style="display: none;"><div id="widgetCompletedFill"></div></div>
+          </div>
+
+          <div class="metric-pill">
+            <span class="material-symbols-rounded">pending_actions</span>
+            <span>Pending:</span>
+            <strong id="widgetPendingDays">0</strong>
+            <span class="metric-pill-sub" id="widgetPendingBreakdown">0 locked</span>
+          </div>
+        </div>
+
+        <!-- Centerstage: Card Stack View + Independent Calendar Strip -->
+        <div class="dash-centerstage-container">
+          
+          <!-- Stack View Container (Current Day on Front, Second Day Stack Behind) -->
+          <div class="card-stack-container">
+
+            <!-- Slider Viewport with Left/Right Navigation Arrows -->
+            <div class="slider-viewport-container">
+              <button type="button" class="slider-arrow-btn slider-prev-btn" id="btnSliderPrev" aria-label="Previous Day" title="Previous Day">
+                <span class="material-symbols-rounded">chevron_left</span>
+              </button>
+
+              <!-- Card Stack Deck (Continuous 3D Virtual Stacked Deck) -->
+              <div class="card-stack-deck" id="cardStackDeck">
+                <!-- Dynamically rendered and animated with continuous 3D stacked deck physics by renderCardDeck() in scripts/app.js -->
+              </div>
+
+              <button type="button" class="slider-arrow-btn slider-next-btn" id="btnSliderNext" aria-label="Next Day" title="Next Day">
+                <span class="material-symbols-rounded">chevron_right</span>
+              </button>
+            </div>
+
+            <!-- Next Up Info Bar Pill (Below Card Stack Deck) -->
+            <div class="next-up-info-pill" id="nextUpPeekLayer" role="button" tabindex="0" title="Click to view next day's task">
+              <div class="next-up-pill-content">
+                <span class="next-up-badge">Next Up</span>
+                <span class="next-up-title" id="nextUpTitle">Create a Type Specimen Poster</span>
+              </div>
+              <span class="material-symbols-rounded next-up-arrow">arrow_forward</span>
+            </div>
+
+          </div>
+
+          <!-- Independent Calendar Week Strip (Directly Below the Stack) -->
+          <div class="calendar-strip-section" id="calendarStripSection">
+            <div class="calendar-strip-header">
+              <span class="calendar-week-title" id="calWeekTitle">This week</span>
+              <div class="calendar-nav-group">
+                <button type="button" class="cal-nav-btn" id="btnCalPrevWeek" aria-label="Previous Week" title="Previous Week">
+                  <span class="material-symbols-rounded">chevron_left</span>
+                </button>
+                <span class="calendar-date-range" id="calDateRange">Aug 2-8</span>
+                <button type="button" class="cal-nav-btn" id="btnCalNextWeek" aria-label="Next Week" title="Next Week">
+                  <span class="material-symbols-rounded">chevron_right</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 7-Day Calendar Strip Row with selected day in white capsule -->
+            <div class="calendar-days-row" id="calendarDaysRow">
+              <!-- Dynamically rendered day capsules -->
+            </div>
+          </div>
+
+          <!-- Bottom Floating Pill (From Screenshot: "I want to become...") -->
+          <div class="bottom-floating-container">
+            <button type="button" class="bottom-goal-pill" id="btnBottomGoalPill" title="View or customize learning roadmap">
+              <span class="material-symbols-rounded" style="color: #64748b; font-size: 16px;">explore</span>
+              <span id="bottomGoalPillText">I want to become...</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Hidden legacy timeline container to keep backward compatibility and logic safe -->
+        <div id="timelineContainer" style="display: none;" class="timeline-flowchart"></div>
+      </section>
+
+      <!-- ================= PAGE 3: PROFILE ================= -->
+      <section id="viewProfile" class="view-section">
+        <div class="profile-layout">
+          <button type="button" class="page-top-back-btn" data-action="go-home" aria-label="Return to Dashboard">
+            <span class="material-symbols-rounded">arrow_back</span>
+            <span>Back to Dashboard</span>
+          </button>
+          <header class="page-header">
+            <h1 class="page-title">Learner Profile</h1>
+            <p class="page-description">Overview of your study momentum, consistency metrics, and pending review backlog.</p>
+          </header>
+
+          <div class="profile-card">
+            <div class="profile-user-header">
+              <div class="profile-avatar" id="profileAvatar">SN</div>
+              <div>
+                <h2 class="profile-name">Student Learner</h2>
+                <div class="profile-plan-name" id="profileActiveGoalText">Active Plan: No active plan</div>
+              </div>
+            </div>
+
+            <!-- Bento Stats Grid -->
+            <div class="stats-grid-detailed">
+              <div class="stat-item">
+                <div class="stat-item-label">Completion Rate</div>
+                <div class="stat-item-value" id="statCompletionRate">0%</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Consistency</div>
+                <div class="stat-item-value" id="statConsistencyScore">100%</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Completed</div>
+                <div class="stat-item-value" id="statCompletedCount">0</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-item-label">Words Logged</div>
+                <div class="stat-item-value" id="statTotalWords">0</div>
+              </div>
+            </div>
+
+            <!-- Review Backlog Section -->
+            <div class="review-backlog-section">
+              <div class="section-subhead">
+                <span>Pending Review Backlog</span>
+                <span style="font-size: 13px; font-weight: 500; color: var(--text-secondary);" id="backlogCountBadge">0 days to review</span>
+              </div>
+              <div id="profileBacklogContainer" class="backlog-list">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- Data Portability Group -->
+            <div class="data-actions-group">
+              <div>
+                <div style="font-size: 15px; font-weight: 700; color: var(--text-primary);">Data Portability & Storage</div>
+                <div class="data-actions-desc">Your notes, code, and progress are stored offline in IndexedDB and synchronized with your SQLite server.</div>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" id="btnExportJson" class="btn btn-secondary btn-sm">
+                  <span class="material-symbols-rounded">download</span>
+                  <span>Export JSON</span>
+                </button>
+                <button type="button" id="btnExportMarkdown" class="btn btn-secondary btn-sm">
+                  <span class="material-symbols-rounded">article</span>
+                  <span>Export Markdown</span>
+                </button>
+                <button type="button" id="btnResetAll" class="btn btn-ghost btn-sm" style="color: var(--danger);">
+                  Reset All Data
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= TASK MODAL (FROSTED GLASS & SEAMLESS PILL TABS) ================= -->
+  <div id="taskModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-window">
+      <!-- Modal Header -->
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-day-pill" id="modalDayPill">Day 1 • In Progress</div>
+          <h2 class="modal-title" id="modalTitle">Task Title</h2>
+          <p class="modal-description" id="modalDescription">Task Description</p>
+        </div>
+        <button type="button" id="btnModalClose" class="modal-close-btn" aria-label="Close Modal">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </header>
+
+      <!-- Seamless Toggle Pills for Tabs -->
+      <nav class="modal-tabs" aria-label="Task Tabs">
+        <button type="button" class="modal-tab-btn active" id="tabBtnNote" data-tab="note">
+          <span class="material-symbols-rounded">edit_note</span>
+          <span>Study Notes</span>
+        </button>
+        <button type="button" class="modal-tab-btn" id="tabBtnCode" data-tab="code">
+          <span class="material-symbols-rounded">terminal</span>
+          <span>Interactive Code</span>
+        </button>
+      </nav>
+
+      <!-- Modal Body (Note & Code Panes) -->
+      <div class="modal-body">
+        <!-- Note Tab Content -->
+        <div id="paneNote" class="tab-pane active">
+          <div class="note-editor-wrapper">
+            <textarea
+              id="noteInput"
+              class="note-textarea"
+              placeholder="Reflect on today's topic. Document key concepts, mental models, or challenges encountered..."
+            ></textarea>
+            <div class="note-meta-bar">
+              <span id="noteCharCount">0 characters • 0 words</span>
+              <span id="noteAutosaveStatus">Saved offline in IndexedDB</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Code Tab Content -->
+        <div id="paneCode" class="tab-pane">
+          <div class="code-controls-bar">
+            <div class="code-lang-selector">
+              <span>Language:</span>
+              <button type="button" class="lang-select-pill active" id="pillLangPython" data-lang="python">Python</button>
+              <button type="button" class="lang-select-pill" id="pillLangJS" data-lang="javascript">JavaScript</button>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+              <button type="button" id="btnClearTerminal" class="btn btn-ghost btn-sm">Clear Terminal</button>
+              <button type="button" id="btnRunCode" class="btn btn-primary btn-sm">
+                <span class="material-symbols-rounded">play_arrow</span>
+                <span>Run Code</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="code-editor-container">
+            <div class="editor-header-bar">
+              <span id="editorLanguageLabel">Python 3 (Pyodide WebAssembly)</span>
+              <span>Tab = 2 spaces</span>
+            </div>
+            <textarea
+              id="codeInput"
+              class="code-textarea"
+              spellcheck="false"
+              placeholder="# Write or practice runnable code here..."
+            ></textarea>
+          </div>
+
+          <!-- In-Browser Compiler Terminal Output -->
+          <div class="terminal-wrapper">
+            <div class="terminal-header">
+              <div class="terminal-indicator">
+                <span class="terminal-dot"></span>
+                <span>In-Browser Terminal Output</span>
+              </div>
+              <span id="terminalExecutionTime" style="color: var(--text-tertiary);">Idle</span>
+            </div>
+            <div id="terminalOutput" class="terminal-output">
+              <span class="terminal-empty">Click "Run Code" to compile and execute client-side.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer & Telemetry Meter -->
+      <footer class="modal-footer">
+        <div class="completion-hint" id="completionHint">
+          <span class="material-symbols-rounded">info</span>
+          <span id="completionHintText">Add at least 15 characters of notes or code to mark complete (0/15).</span>
+        </div>
+
+        <div class="modal-footer-actions">
+          <button type="button" id="btnModalSkip" class="btn btn-warning btn-sm">
+            Skip & Review Later
+          </button>
+          <button type="button" id="btnModalComplete" class="btn btn-primary" disabled>
+            Mark Complete
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= AUTHENTICATION & MULTI-USER MODAL ================= -->
+  <div id="authModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-window" style="max-width: 540px;">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <div class="modal-day-pill" style="color: var(--accent);">Multi-User Account</div>
+          <h2 class="modal-title" style="font-size: 20px;">Sign In to Smart Notebook</h2>
+          <p class="modal-description">Sync your learning roadmaps and study notes across all your devices.</p>
+        </div>
+        <button type="button" id="btnAuthModalClose" class="modal-close-btn" aria-label="Close Modal">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </header>
+
+      <!-- Auth Modal Tabs -->
+      <nav class="modal-tabs" aria-label="Auth Tabs">
+        <button type="button" class="modal-tab-btn active" id="tabBtnAuthGoogle" data-authtab="google">
+          <svg width="14" height="14" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          Google Sign-In
+        </button>
+        <button type="button" class="modal-tab-btn" id="tabBtnAuthDemo" data-authtab="demo">
+          <span class="material-symbols-rounded">switch_account</span>
+          <span>Switch / Demo User</span>
+        </button>
+        <button type="button" class="modal-tab-btn" id="tabBtnAuthSettings" data-authtab="settings">
+          <span class="material-symbols-rounded">settings</span>
+          <span>Google Cloud Setup</span>
+        </button>
+      </nav>
+
+      <div class="modal-body">
+        <!-- Tab 1: Google Sign-In Pane -->
+        <div id="paneAuthGoogle" class="auth-tab-pane">
+          <div style="text-align: center; padding: 16px 8px 24px;">
+            <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 20px;">
+              Sign in with your Google account to automatically synchronize roadmaps, daily notes, and consistency scores across all your devices.
+            </p>
+
+            <!-- Real Google GIS Render Target -->
+            <div id="googleBtnContainer" style="display: flex; justify-content: center; min-height: 44px; margin-bottom: 14px;"></div>
+
+            <!-- Unconfigured Google Client ID helper box -->
+            <div id="googleUnconfiguredBox" style="background-color: var(--bg-canvas); border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg); padding: 20px; text-align: left; margin-top: 10px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; color: var(--text-primary);">
+                <span>ℹ️</span>
+                <span>Google Client ID Required</span>
+              </div>
+              <p style="font-size: 13px; color: var(--text-secondary); margin-top: 6px; line-height: 1.55;">
+                To enable live Google OAuth sign-in, enter your Google OAuth Client ID in the <strong>"Google Cloud Setup"</strong> tab.
+              </p>
+              <div style="margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnGoToSettingsTab">
+                  Configure Client ID
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" id="btnGoToDemoTab">
+                  Or Test Multi-User Instantly →
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Demo / Quick Switcher Pane -->
+        <div id="paneAuthDemo" class="auth-tab-pane" style="display: none;">
+          <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+            Test isolated roadmaps for multiple users across devices without configuring Google Cloud:
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+            <button type="button" class="btn btn-secondary btn-demo-user" data-email="alex.developer@gmail.com" data-name="Alex Developer" style="justify-content: flex-start; padding: 12px 18px; border-radius: var(--radius-lg);">
+              <div style="width: 30px; height: 30px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; margin-right: 12px;">AD</div>
+              <div style="text-align: left;">
+                <div style="font-weight: 700; font-size: 13.5px;">Alex Developer</div>
+                <div style="font-size: 11.5px; color: var(--text-tertiary);">alex.developer@gmail.com</div>
+              </div>
+            </button>
+
+            <button type="button" class="btn btn-secondary btn-demo-user" data-email="priya.data@gmail.com" data-name="Priya Sharma" style="justify-content: flex-start; padding: 12px 18px; border-radius: var(--radius-lg);">
+              <div style="width: 30px; height: 30px; border-radius: 50%; background: #10b981; color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; margin-right: 12px;">PS</div>
+              <div style="text-align: left;">
+                <div style="font-weight: 700; font-size: 13.5px;">Priya Sharma</div>
+                <div style="font-size: 11.5px; color: var(--text-tertiary);">priya.data@gmail.com</div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Custom User Form -->
+          <form id="customUserLoginForm" style="border-top: 1px solid var(--border-subtle); padding-top: 18px;">
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px;">Or Sign in as any custom user:</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+              <input type="email" id="inputCustomEmail" class="form-input" placeholder="user@gmail.com" required style="padding: 10px 14px; font-size: 13px;">
+              <input type="text" id="inputCustomName" class="form-input" placeholder="Display Name" required style="padding: 10px 14px; font-size: 13px;">
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm" style="width: 100%;">
+              Sign In as Custom Learner
+            </button>
+          </form>
+        </div>
+
+        <!-- Tab 3: Google Cloud Setup Pane -->
+        <div id="paneAuthSettings" class="auth-tab-pane" style="display: none;">
+          <form id="formSaveGoogleClient" style="display: flex; flex-direction: column; gap: 14px;">
+            <div class="form-group">
+              <label for="inputGoogleClientId" class="form-label">
+                <span>Google OAuth 2.0 Client ID</span>
+                <span class="form-hint">e.g. 12345...apps.googleusercontent.com</span>
+              </label>
+              <input
+                type="text"
+                id="inputGoogleClientId"
+                class="form-input"
+                placeholder="Paste your Client ID from Google Cloud Console"
+              >
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-sm">
+              Save Google Client ID
+            </button>
+          </form>
+
+          <div style="margin-top: 20px; padding: 16px; background: var(--bg-canvas); border-radius: var(--radius-lg); font-size: 12px; color: var(--text-secondary); line-height: 1.65;">
+            <strong>How to get a Google Client ID (2 minutes):</strong>
+            <ol style="margin-left: 18px; margin-top: 6px;">
+              <li>Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank" style="color: var(--accent); text-decoration: underline;">Google Cloud Console Credentials</a>.</li>
+              <li>Click <strong>Create Credentials</strong> ➔ <strong>OAuth client ID</strong> (Web application).</li>
+              <li>Under <strong>Authorized JavaScript origins</strong>, add:<br>
+                <code style="background: var(--bg-subtle); padding: 2px 5px; border-radius: 4px;">http://localhost:5180</code><br>
+                <code style="background: var(--bg-subtle); padding: 2px 5px; border-radius: 4px;">http://10.49.22.82:5180</code>
+              </li>
+              <li>Click <strong>Create</strong>, copy the Client ID, and paste it above!</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <footer class="modal-footer" style="justify-content: flex-end;">
+        <button type="button" id="btnAuthModalDone" class="btn btn-secondary btn-sm">Close</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Multi-Device Connection Modal -->
+  <div id="deviceModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal-window" style="max-width: 580px;">
+      <header class="modal-header">
+        <div class="modal-title-group">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div class="modal-day-pill" style="color: var(--accent); margin: 0;">Multi-Device Sync</div>
+            <div class="sync-status-indicator" style="display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; background: rgba(16, 185, 129, 0.12); border-radius: 9999px; font-size: 11.5px; font-weight: 700; color: #047857;">
+              <span class="status-dot" id="statusDot"></span>
+              <span id="statusLabel">Checking Server...</span>
+            </div>
+          </div>
+          <h2 class="modal-title" style="font-size: 20px;">Access on Phone, Tablet & Other PCs</h2>
+          <p class="modal-description">Connect any device on your Wi-Fi network to view, study, and sync your notebook in real-time.</p>
+        </div>
+        <button type="button" id="btnDeviceModalClose" class="modal-close-btn" aria-label="Close Modal">
+          <span class="material-symbols-rounded">close</span>
+        </button>
+      </header>
+
+      <div class="modal-body">
+        <div style="margin-bottom: 16px;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">
+            1. Open in Browser on Other Devices
+          </div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 14px;">
+            Make sure your other device (phone, iPad, laptop) is on the same Wi-Fi network, then enter one of these URLs in its browser:
+          </div>
+          <div id="deviceUrlsList" style="display: flex; flex-direction: column; gap: 8px;">
+            <!-- Populated dynamically with network IPs -->
+          </div>
+        </div>
+
+        <div style="background-color: var(--bg-canvas); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 16px; margin-top: 18px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text-primary);">
+            <span class="material-symbols-rounded" style="color: var(--success); font-size: 18px;">verified_user</span>
+            <span>Offline-First Resilience</span>
+          </div>
+          <p style="font-size: 12.5px; color: var(--text-secondary); margin-top: 4px; line-height: 1.55;">
+            Even if you temporarily lose Wi-Fi on your phone or computer, Smart Notebook keeps working through local IndexedDB and synchronizes automatically with your SQLite database when reconnected.
+          </p>
+        </div>
+
+        <!-- Plan Setup Shortcut inside Settings Modal -->
+        <div style="background-color: var(--bg-canvas); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 14px; margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <div>
+            <div style="font-size: 13px; font-weight: 700; color: var(--text-primary);">Learning Roadmap & Plan</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px;">Create, update, or generate new curriculum with AI prompts.</div>
+          </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnModalOpenPlanSetup" style="white-space: nowrap;">
+            Open Plan Setup →
+          </button>
+        </div>
+      </div>
+
+      <footer class="modal-footer" style="justify-content: flex-end;">
+        <button type="button" id="btnDeviceModalDone" class="btn btn-secondary btn-sm">Done</button>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ================= MOBILE FOOTER NAVIGATION BAR ================= -->
+  <nav class="mobile-footer-nav" id="mobileFooterNav" aria-label="Mobile Navigation">
+    <button type="button" class="mobile-nav-item active" id="mobNavDashboard" data-view="dashboard" aria-label="Dashboard">
+      <span class="material-symbols-rounded mobile-nav-icon">dashboard</span>
+      <span class="mobile-nav-label">Dashboard</span>
+    </button>
+
+    <button type="button" class="mobile-nav-item" id="mobNavConfig" data-view="config" aria-label="Plan Setup">
+      <span class="material-symbols-rounded mobile-nav-icon">tune</span>
+      <span class="mobile-nav-label">Plan</span>
+    </button>
+
+    <button type="button" class="mobile-nav-item" id="mobNavProfile" data-view="profile" aria-label="Profile">
+      <span class="material-symbols-rounded mobile-nav-icon">person</span>
+      <span class="mobile-nav-label">Profile</span>
+    </button>
+
+    <button type="button" class="mobile-nav-item" id="mobNavSettings" aria-label="Settings">
+      <span class="material-symbols-rounded mobile-nav-icon">settings</span>
+      <span class="mobile-nav-label">Settings</span>
+    </button>
+  </nav>
+
+  <!-- Toast Feedback Notifications Container -->
+  <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
+  <!-- Main Modular Application Script (Underlying Logic Intact) -->
+  <script type="module" src="./scripts/app.js"></script>
+</body>
+</html>
